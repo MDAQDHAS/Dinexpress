@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/rfid-scan", "destination": "/api/rfid-bridge" },
+    { "source": "/api/rfid-scan", "destination": "/api/rfid-bridge" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
