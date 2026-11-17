@@ -54,8 +54,8 @@ export default function Navbar() {
         <div className="container announcement-content">
           <div className="announcement-left">
             <Sparkles size={14} className="sparkle-icon" />
-            <span className="announcement-title">Recruiter & Interviewer Live Demo Mode:</span>
-            <span className="announcement-desc">Switch roles with 1 click to test full-stack workflows!</span>
+            <span className="announcement-title">Recruiter Live Demo Tour:</span>
+            <span className="announcement-desc">Explore role-specific UI flows or sign in for real Supabase auth:</span>
           </div>
           <div className="role-switch-buttons">
             <button

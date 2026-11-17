@@ -161,10 +161,10 @@ export default function OrderTracking() {
                           <button
                             onClick={() => updateOrderStatus(order.id, 'delivered')}
                             className="btn-collect-tap"
-                            title="Simulate student tapping RFID card at pickup counter"
+                            title="Simulate student tapping RFID card at physical counter reader"
                           >
                             <Radio size={14} />
-                            <span>Simulate RFID Tap Pickup</span>
+                            <span>Simulate RFID Tap Pickup [IoT Simulation]</span>
                           </button>
                         </div>
                       )}

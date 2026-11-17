@@ -139,6 +139,59 @@ export const WebAppProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Check for real active Supabase Session on initial mount
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          const role =
+            profile?.role ||
+            (session.user.email?.endsWith('.edu.in')
+              ? 'admin'
+              : session.user.email?.endsWith('@gmail.com')
+              ? 'worker'
+              : 'student');
+
+          const realUser = {
+            id: session.user.id,
+            email: session.user.email,
+            full_name:
+              profile?.full_name ||
+              session.user.user_metadata?.full_name ||
+              session.user.email?.split('@')[0],
+            role: role,
+            wallet_balance: parseFloat(profile?.wallet_balance || 450.00),
+            loyalty_points: profile?.loyalty_points || 180,
+            isRealAuth: true,
+          };
+          setUser(realUser);
+          setSmartCardBalance(realUser.wallet_balance);
+        }
+      } catch (err) {
+        console.warn('Supabase session restoration skipped:', err);
+      }
+    };
+
+    restoreSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        restoreSession();
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   // Fetch Products from Supabase with fallback to MOCK_ITEMS
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
@@ -353,79 +406,87 @@ export const WebAppProvider = ({ children }) => {
     }
   };
 
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
   // Place Order
   const placeOrder = async ({ paymentMethod = 'rfid_tap' }) => {
+    if (isPlacingOrder) return false;
     if (cartItems.length === 0) {
       showToast('Your cart is empty!', 'error');
       return false;
     }
 
-    const total = cartItems.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
-
-    if (paymentMethod === 'rfid_tap' || paymentMethod === 'wallet') {
-      if (smartCardBalance < total) {
-        showToast('Insufficient RFID Balance! Please recharge.', 'error');
-        setIsWalletModalOpen(true);
-        return false;
-      }
-    }
-
-    const itemsSummary = cartItems.map((i) => `${i.name} x${i.quantity}`).join(', ');
-    const newOrderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newOrder = {
-      id: newOrderId,
-      dbId: newOrderId,
-      user_id: user?.id || 'demo-student-id-1234',
-      userName: user?.full_name || 'Gokulraj (Student)',
-      items_summary: itemsSummary,
-      total_amount: total,
-      status: 'pending',
-      payment_method: paymentMethod,
-      created_at: new Date().toISOString(),
-    };
-
-    // Deduct Balance if wallet/rfid
-    if (paymentMethod === 'rfid_tap' || paymentMethod === 'wallet') {
-      const updatedBalance = smartCardBalance - total;
-      setSmartCardBalance(updatedBalance);
-      setUser((prev) => ({ ...prev, wallet_balance: updatedBalance }));
-    }
-
-    // Award loyalty points
-    const earnedPoints = Math.floor(total / 10);
-    setPoints((prev) => prev + earnedPoints);
-
-    // Update Local Orders
-    setAllOrders((prev) => [newOrder, ...prev]);
-    clearCart();
-    setIsCartOpen(false);
-    setIsPaymentModalOpen(false);
-    setActiveTab('orders');
-    showToast(`Order #${newOrderId} placed successfully! 🍛`, 'success');
-
-    // Attempt DB sync
+    setIsPlacingOrder(true);
     try {
-      await supabase.from('orders').insert([
-        {
-          items_summary: itemsSummary,
-          total_amount: total,
-          status: 'pending',
-          payment_method: paymentMethod,
-          user_id: user?.id && user.id.includes('-') && user.id.length > 20 ? user.id : null,
-        },
-      ]);
-      await supabase.from('user_logs').insert([
-        {
-          email: user?.email || 'guest@nandhacen.edu.in',
-          event_type: 'ORDER_PLACED_WEB',
-        },
-      ]);
-    } catch (e) {
-      console.warn('Order DB sync error:', e);
-    }
+      const total = cartItems.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
 
-    return true;
+      if (paymentMethod === 'rfid_tap' || paymentMethod === 'wallet') {
+        if (smartCardBalance < total) {
+          showToast('Insufficient RFID Balance! Please recharge.', 'error');
+          setIsWalletModalOpen(true);
+          return false;
+        }
+      }
+
+      const itemsSummary = cartItems.map((i) => `${i.name} x${i.quantity}`).join(', ');
+      const newOrderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      const newOrder = {
+        id: newOrderId,
+        dbId: newOrderId,
+        user_id: user?.id || 'demo-student-id-1234',
+        userName: user?.full_name || 'Gokulraj (Student)',
+        items_summary: itemsSummary,
+        total_amount: total,
+        status: 'pending',
+        payment_method: paymentMethod,
+        created_at: new Date().toISOString(),
+      };
+
+      // Deduct Balance if wallet/rfid
+      if (paymentMethod === 'rfid_tap' || paymentMethod === 'wallet') {
+        const updatedBalance = smartCardBalance - total;
+        setSmartCardBalance(updatedBalance);
+        setUser((prev) => ({ ...prev, wallet_balance: updatedBalance }));
+      }
+
+      // Award loyalty points
+      const earnedPoints = Math.floor(total / 10);
+      setPoints((prev) => prev + earnedPoints);
+
+      // Update Local Orders
+      setAllOrders((prev) => [newOrder, ...prev]);
+      clearCart();
+      setIsCartOpen(false);
+      setIsPaymentModalOpen(false);
+      setActiveTab('orders');
+      showToast(`Order #${newOrderId} placed successfully! 🍛`, 'success');
+
+      // Attempt DB sync
+      try {
+        await supabase.from('orders').insert([
+          {
+            items_summary: itemsSummary,
+            total_amount: total,
+            status: 'pending',
+            payment_method: paymentMethod,
+            user_id: user?.id && user.id.includes('-') && user.id.length > 20 ? user.id : null,
+          },
+        ]);
+        await supabase.from('user_logs').insert([
+          {
+            email: user?.email || 'guest@nandhacen.edu.in',
+            event_type: 'ORDER_PLACED_WEB',
+          },
+        ]);
+      } catch (e) {
+        console.warn('Order DB sync error:', e);
+      }
+
+      return true;
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   // Update Order Status (Worker/Admin)

@@ -105,7 +105,7 @@ export default function WalletModal() {
 
         {/* Payment Gateway Method */}
         <div className="recharge-gateway-section">
-          <label className="input-label">Pay via Gateway</label>
+          <label className="input-label">Pay via Gateway [Sandbox Simulation]</label>
           <div className="gateway-options-grid">
             <button
               type="button"

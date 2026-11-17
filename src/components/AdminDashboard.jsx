@@ -164,8 +164,8 @@ export default function AdminDashboard() {
             </div>
             <div className="metric-data">
               <span className="metric-label">RFID Hardware Bridge</span>
-              <h3 className="metric-value status-online">ONLINE</h3>
-              <span className="metric-subtext">ESP32 Counter Reader #1</span>
+              <h3 className="metric-value status-online">API READY</h3>
+              <span className="metric-subtext">Bridge: /api/rfid-scan (ESP32 / RC522)</span>
             </div>
           </div>
         </div>
