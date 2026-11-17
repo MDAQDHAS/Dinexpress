@@ -3,11 +3,16 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
+    "dev": "vite",
+    "web": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "start": "expo start",
+    "mobile": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
-    "build": "expo export --platform web"
+    "mobile:web": "expo start --web",
+    "mobile:build": "expo export --platform web"
   },
   "dependencies": {
     "@expo-google-fonts/outfit": "^0.4.3",
@@ -39,6 +44,9 @@
   "private": true,
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "typescript": "^6.0.2"
+    "@vitejs/plugin-react": "^6.3.0",
+    "lucide-react": "^1.74.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.3.8"
   }
 }

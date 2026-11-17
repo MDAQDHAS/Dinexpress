@@ -30,8 +30,13 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -41,3 +46,6 @@ yarn-error.*
 /android
 
 .vercel
+temp.zip
+*.pptx
+
